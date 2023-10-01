@@ -1,0 +1,122 @@
+База данных 
+create (u1:Person{name:"Dmitry",from:"Tula"})
+create (u2:Person{name:"Evgeny",from:"Krasnodar"})
+create (u3:Person{name:"Vasily",from:"Moscow"})
+create (u4:Person{name:"Ivan",from:"Rostov-na-donu"}) 
+create (u5:Person{name:"Nikita",from:"Komsomolsk-na-amure"}) 
+create (u6:Person{name:"Konstantin",from:"Vladivostok"}) 
+create (u1)-[:FRIEND]->(u2),
+ (u2)-[:FRIEND]->(u1),
+  (u5)-[:A]->(u2),
+   (u5)-[:A]->(u1),
+    (u5)-[:A]->(u3),
+     (u3)-[:NACHALNIC]->(u1),
+      (u3)-[:NACHALNIC]->(u2),
+       (u4)-[:B]->(u1),
+        (u4)-[:B]->(u3),
+         (u6)-[:C]->(u1),
+          (u6)-[:C]->(u4)
+
+1. SET 
+match (n:Person) where n.name="Dmitry" 
+    set n.from="value1" 
+
+2. Union 
+match (n:Person{name:"Ivan"})-[:B]->(m:Person) 
+return m.name
+union 
+match (n:Person{name:"Dmitry"})-[:FRIEND]->(m:Person) 
+return m.name 
+
+3. Create 
+create (u1:Person {name:"Dmitry",from:"Tula"}) 
+
+match (n:Person{name:"Dmitry"})
+match (m:Person{name:"Evgeny"})
+create (n)-[:FRIEND]->(m) 
+
+4. Merge 
+merge (n:Person{name:"Nikita"}) 
+merge (m:Person{name:"Konstantin"}) 
+merge (m)-[:C]->(n) 
+
+5. Delete 
+merge (n:Person{name:"Nikita"})<-[e:C]-(m:Person{name:"Konstantin"}) 
+delete e 
+
+merge (n:Person{name:"Nikita"}) 
+delete n 
+
+6. Call 
+call (
+    match (n:Person{name:"Ivan"})-[:B]->(m:Person) 
+return m.name
+union 
+match (n:Person{name:"Dmitry"})-[:FRIEND]->(m:Person) 
+return m.name 
+) 
+
+7. Remove,Foreach 
+match (n:Person{name:"Dmitry"}) 
+remove n.from 
+return n
+
+match p=(n)-[*]->(k)
+where n.name="Konstantin" and k.name="Dmitry" 
+    foreach (x in nodes(p) | set x.salary="100000")
+
+8. Labels 
+match (n:Person{name:"Dmitry"}) 
+return labels (n) 
+
+9. Lists 
+return range(0,10) [3..15] as list 
+
+match (n:Person{name:"Ivan"}) 
+return [(n)-->(b:Person) | b.name] as listname 
+
+10. Карты, пары ключ-значение 
+with {name:"V",address:{ulica:"Lenina",dom:"2"}} as n   
+return n 
+
+match (n:Person{name:"Nikita"})-[:A]->(p:Person) 
+with n, collect(p{.name, .from}) as persons
+return n{.name, persons:persons} 
+
+11. Предикаты 
+match (n:Person{name:"Dmitry"}) 
+return n.from<>"Tula" 
+
+match (n:Person{name:"Dmitry"}) 
+return n.from is null 
+
+match (n:Person{name:"Dmitry"}) 
+return n.from="Tula"
+
+12. List predicates 
+match (n:Person{name:"Konstantin"}) 
+match (m:Person{name:"Nikita"}) 
+create (n)-[:C]->(m)
+
+match p=(a)-[*]->(b) 
+where 
+a.name="Konstantin" and 
+b.name="Vasily"  
+and all(any,none,single) (x in nodes(p) where x.name="Nikita") 
+return p 
+
+13. List expressions 
+match (n:Person{name:"Nikita"}) 
+return keys(n) 
+
+match p=(a)-->(b)-->(c) 
+where a.name="Ivan" and c.name="Evgeny" 
+    return nodes (p)
+
+match (n) return elementId(n) 
+
+match (n) return id(n) 
+
+match p=(a)-->(b)-->(c) 
+where a.name="Nikita" 
+    return length(p) 
